@@ -113,6 +113,9 @@ Node::Node(
   scan_matched_point_cloud_publisher_ =
       node_handle_.advertise<sensor_msgs::PointCloud2>(
           kScanMatchedPointCloudTopic, kLatestOnlyPublisherQueueSize);
+  map_list_publisher_ =
+      node_handle_.advertise<sensor_msgs::PointCloud2>(
+          kMapListTopic, kLatestOnlyPublisherQueueSize);
 
   wall_timers_.push_back(node_handle_.createWallTimer(
       ::ros::WallDuration(node_options_.submap_publish_period_sec),
@@ -129,6 +132,9 @@ Node::Node(
   wall_timers_.push_back(node_handle_.createWallTimer(
       ::ros::WallDuration(kConstraintPublishPeriodSec),
       &Node::PublishConstraintList, this));
+  wall_timers_.push_back(node_handle_.createWallTimer(
+      ::ros::WallDuration(kConstraintPublishPeriodSec),
+      &Node::PublishMapList, this));
 }
 
 Node::~Node() { FinishAllTrajectories(); }
@@ -174,6 +180,24 @@ void Node::AddSensorSamplers(const int trajectory_id,
           options.rangefinder_sampling_ratio, options.odometry_sampling_ratio,
           options.fixed_frame_pose_sampling_ratio, options.imu_sampling_ratio,
           options.landmarks_sampling_ratio));
+}
+
+void Node::PublishMapList(const ::ros::WallTimerEvent& timer_event) {
+  carto::sensor::TimedPointCloud point_cloud;
+  const auto& entry : map_builder_bridge_.GetTrajectoryStates()
+  PointsBatch b = obj.getBatch();
+  point_cloud.reserve(batch->points.size());
+  if (map_list_publisher_.getNumSubscribers() > 0) {
+    for (const Eigen::Vector3f point : batch->points) {
+      Eigen::Vector4f point_time;
+      point_time << point, 0.f;
+      point_cloud.push_back(point_time);
+    }
+    map_list_publisher_.publish(ToPointCloud2Message(
+        carto::common::ToUniversal(batch->start_time),
+        node_options_.map_frame,
+        point_cloud));
+  }
 }
 
 void Node::PublishTrajectoryStates(const ::ros::WallTimerEvent& timer_event) {

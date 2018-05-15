@@ -41,6 +41,7 @@
 #include "cartographer_ros_msgs/SubmapQuery.h"
 #include "cartographer_ros_msgs/TrajectoryOptions.h"
 #include "cartographer_ros_msgs/WriteState.h"
+#include "cartographer/io/points_batch.h"
 #include "nav_msgs/Odometry.h"
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
@@ -116,6 +117,8 @@ class Node {
 
   ::ros::NodeHandle* node_handle();
 
+ void PublishMapList(std::unique_ptr<::cartographer::io::PointsBatch> batch);
+
  private:
   struct Subscriber {
     ::ros::Subscriber subscriber;
@@ -175,6 +178,7 @@ class Node {
   ::ros::Publisher trajectory_node_list_publisher_;
   ::ros::Publisher landmark_poses_list_publisher_;
   ::ros::Publisher constraint_list_publisher_;
+  ::ros::Publisher map_list_publisher_;
   // These ros::ServiceServers need to live for the lifetime of the node.
   std::vector<::ros::ServiceServer> service_servers_;
   ::ros::Publisher scan_matched_point_cloud_publisher_;
